@@ -1,5 +1,6 @@
 createbase.js
 
+
 var mysql = require('mysql2');
 var con=mysql.createConnection({
     host: "127.0.0.1",
@@ -10,404 +11,386 @@ var con=mysql.createConnection({
 con.connect(function(err){
     if (err) throw err;
     console.log("Connected!");
-    con.query("CREATE DATABASE exam",function(err,result)
-    {
+    con.query("CREATE DATABASE feedback",
+    function(err,result){
         if(err) throw err;
         console.log("Database created");
     });
 });
 
+createtable.js
 
-table.js
-
-const express = require('express');
-const app = express();
-const bodyParser = require('body-parser');
-const urlencodedParser = bodyParser.urlencoded({ extended: true });
-app.use(bodyParser.urlencoded({ extended: true }));
-const mysql = require('mysql2');
-
-const con = mysql.createConnection({
+var mysql = require('mysql2');
+var con=mysql.createConnection({
     host: "127.0.0.1",
     user: "root",
     password: "",
-    database: "bus"
+    database: "feedback"
+});
+// Note: The 'rating' field is not included in the 'comments' table creation
+// as it wasn't explicitly mentioned in the provided scenario.
+
+
+con.connect(function(err) {
+  if (err) throw err;
+  console.log("Connected!");
+
+  var createUsersTable = `
+    CREATE TABLE IF NOT EXISTS users (
+      user_id INT AUTO_INCREMENT PRIMARY KEY,
+      username VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NOT NULL
+    );
+  `;
+
+  con.query(createUsersTable, function(err, result) {
+    if (err) throw err;
+    console.log("Users table created");
+  });
+
+  // Create 'posts' table
+  var createPostsTable = `
+    CREATE TABLE IF NOT EXISTS posts (
+      post_id INT AUTO_INCREMENT PRIMARY KEY,
+      title VARCHAR(255) NOT NULL,
+      content TEXT NOT NULL,
+      Rating INT,
+      user_id INT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(user_id)
+    );
+  `;
+
+  con.query(createPostsTable, function(err, result) {
+    if (err) throw err;
+    console.log("Posts table created");
+  });
+
+  // Create 'comments' table
+  var createCommentsTable = `
+    CREATE TABLE IF NOT EXISTS comments (
+      comment_id INT AUTO_INCREMENT PRIMARY KEY,
+      post_id INT,
+      user_id INT,
+      rating INT,
+      comment_text TEXT NOT NULL,
+      FOREIGN KEY (post_id) REFERENCES posts(post_id),
+      FOREIGN KEY (user_id) REFERENCES users(user_id)
+    );
+  `;
+
+  con.query(createCommentsTable, function(err, result) {
+    if (err) throw err;
+    console.log("Comments table created");
+  });
+
+  // Note: The 'rating' field is not included in the 'comments' table creation
+  // as it wasn't explicitly mentioned in the provided scenario.
+
+  con.end();
+});
+
+
+insertrec.js
+
+
+var mysql = require('mysql2');
+
+var con = mysql.createConnection({
+    host: "127.0.0.1",
+    user: "root",
+    password: "",
+    database: "feedback"
 });
 
 con.connect(function(err) {
     if (err) throw err;
+    console.log("Connected!");
 
-    var createDepartmentTable = 'CREATE TABLE IF NOT EXISTS Department1 (Dnumber INT PRIMARY KEY, Dname varchar(30), Mgr_ssn int(5), Mgr_start_date DATE)';
-    con.query(createDepartmentTable, function(err, result) {
-        if (err) throw err;
-        console.log("Department table created");
-
-        
-    });
-    var createEmployeeTable = `
-            CREATE TABLE IF NOT EXISTS Employee (
-                Fname VARCHAR(255),
-                Minit CHAR(1),
-                Lname VARCHAR(255),
-                Ssn CHAR(9) PRIMARY KEY,
-                Bdate DATE,
-                Address VARCHAR(255),
-                Sex CHAR(1),
-                Salary DECIMAL(10, 2),
-                Super_ssn CHAR(9),
-                Dnumber INT,
-                FOREIGN KEY (Super_ssn) REFERENCES Employee(Ssn),
-                FOREIGN KEY (Dnumber) REFERENCES Department(Dnumber)
-            )
-        `;
-        con.query(createEmployeeTable, function(err, result) {
-            if (err) throw err;
-            console.log("Employee table created");
-        });
-        var createDepartmentLocationTable = `
-        CREATE TABLE IF NOT EXISTS Department_Location (
-            Dnumber INT,
-            Dlocation VARCHAR(255),
-            PRIMARY KEY (Dnumber, Dlocation),
-            FOREIGN KEY (Dnumber) REFERENCES Department(Dnumber)
-        )
+    var insertUsersQuery = `
+        INSERT INTO users ( username, email)
+        VALUES
+        ('J', 'j.d@example.com'),
+        ('A', 'a.@example.com'),
+        ('B', 'b.@example.com'),
+        ('E', 'e.@example.com'),
+        ('M', 'm.@example.com');
     `;
-    con.query(createDepartmentLocationTable, function(err, result) {
+
+    con.query(insertUsersQuery, function(err, result) {
         if (err) throw err;
-        console.log("Department_Location table created");
-    });
-    var createProjectTable = `
-        CREATE TABLE IF NOT EXISTS Project (
-            Pname VARCHAR(255),
-            Pnumber INT PRIMARY KEY,
-            Plocation VARCHAR(255),
-            Dnum INT,
-            FOREIGN KEY (Dnum) REFERENCES Department(Dnumber)
-        )
+       console.log("Inserted 5 records into 'users' table");
+   });
+
+    var insertPostsQuery = `
+        INSERT INTO posts (title, content, user_id, rating)
+        VALUES
+        ('Introduction ', 'Node.jss V8 JavaScript engine.', 1, 1),
+        ('Web ', 'Learn essential tips.', 2,    2),
+        ('Data ', 'Explore the world of data science .', 3, 3),
+        ('Artificial ', 'Discover the latest trends. ', 4, 4),
+        ('Mobile ', 'Strategies .', 5,  5);
     `;
-    con.query(createProjectTable, function(err, result) {
+
+    con.query(insertPostsQuery, function(err, result) {
         if (err) throw err;
-        console.log("Project table created");
+        console.log("Inserted 5 records into 'posts' table");
     });
-    var createWorksOnTable = `
-    CREATE TABLE IF NOT EXISTS WorksOn (
-        Essn CHAR(9),
-        Pno INT,
-        Hours INT,
-        PRIMARY KEY (Essn, Pno),
-        FOREIGN KEY (Essn) REFERENCES Employee(Ssn),
-        FOREIGN KEY (Pno) REFERENCES Project(Pnumber)
-    )
-`;
-con.query(createWorksOnTable, function(err, result) {
-    if (err) throw err;
-    console.log("WorksOn table created");
-});
-var createDependentTable = `
-CREATE TABLE IF NOT EXISTS Dependent (
-    Essn CHAR(9),
-    Dependent_name VARCHAR(255),
-    Sex CHAR(1),
-    Bdate DATE,
-    Relationship VARCHAR(255),
-    PRIMARY KEY (Essn, Dependent_name),
-    FOREIGN KEY (Essn) REFERENCES Employee(Ssn)
-)
-`;
-con.query(createDependentTable, function(err, result) {
-if (err) throw err;
-console.log("Dependent table created");
-});
+
+    var insertCommentsQuery = `
+        INSERT INTO comments (post_id, user_id, rating, comment_text)
+        VALUES
+        (1, 2, 4, 'Great introduction to Node.js!'),
+        (2, 1, 5, 'Very helpful tips for web development.'),
+        (3, 3, 3, 'Interesting insights into data science.'),
+        (4, 4, 2, 'Not impressed with the AI trends.'),
+        (5, 5, 1, 'Looking forward to trying the mobile app development strategies.');
+    `;
+
+    con.query(insertCommentsQuery, function(err, result) {
+        if (err) throw err;
+        console.log("Inserted 5 records into 'comments' table");
+    });
+
+    con.end();
 });
 
 
-insert.js
 
-const mysql = require('mysql2');
+new.js
 
-const connection = mysql.createConnection({
-  host: '127.0.0.1',
-  user: 'root',
-  password: '',
-  database: 'fin',
+var http = require('http');
+var mysql = require('mysql');
+var express = require('express');
+var app = express();
+var bodyParser = require('body-parser');
+var urlencodedParser = bodyParser.urlencoded({ extended: true });
+
+const fs = require('fs');
+
+var con = mysql.createConnection({
+    host: "127.0.0.1",
+    user: "root",
+    password: "",
+    database: "feedback"
 });
 
-connection.connect(function (err) {
-  if (err) throw err;
-
-  // Insert into 'Department1' table
-  const insertDepartmentQuery = `
-    INSERT INTO Department1 (Dnumber, Dname, Mgr_ssn, Mgr_start_date)
-    VALUES
-    (1, 'IT Department', 111111111, '2023-01-01'),
-    (2, 'Finance Department', 222222222, '2023-01-01'),
-    (3, 'Marketing Department', 333333333, '2023-01-01');
-  `;
-  connection.query(insertDepartmentQuery, function (err, result) {
-    if (err) throw err;
-    console.log('Inserted records into "Department1" table');
-  });
-
-  // Insert into 'Employee' table
-  const insertEmployeeQuery = `
-    INSERT INTO Employee (Fname, Minit, Lname, Ssn, Bdate, Address, Sex, Salary, Super_ssn, Dno)
-    VALUES
-    ('John', 'D', 'Doe', '111111111', '1990-01-01', '123 Main St', 'M', 50000, '222222222', 1),
-    ('Jane', 'A', 'Doe', '222222222', '1991-02-02', '456 Oak St', 'F', 45000, '333333333', 2),
-    ('Bob', 'B', 'Smith', '333333333', '1985-03-03', '789 Pine St', 'M', 55000, NULL, 3);
-  `;
-  connection.query(insertEmployeeQuery, function (err, result) {
-    if (err) throw err;
-    console.log('Inserted records into "Employee" table');
-  });
-
-  // Insert into 'Department_Location' table
-  const insertDepartmentLocationQuery = `
-    INSERT INTO Department_Location (Dnumber, Dlocation)
-    VALUES
-    (1, 'Location1'),
-    (2, 'Location2'),
-    (3, 'Location3');
-  `;
-  connection.query(insertDepartmentLocationQuery, function (err, result) {
-    if (err) throw err;
-    console.log('Inserted records into "Department_Location" table');
-  });
-
-  // Insert into 'Project' table
-  const insertProjectQuery = `
-    INSERT INTO Project (Pname, Pnumber, Plocation, Dnum)
-    VALUES
-    ('Project1', 1, 'Location1', 1),
-    ('Project2', 2, 'Location2', 2),
-    ('Project3', 3, 'Location3', 3);
-  `;
-  connection.query(insertProjectQuery, function (err, result) {
-    if (err) throw err;
-    console.log('Inserted records into "Project" table');
-  });
-
-  // Insert into 'WorksOn' table
-  const insertWorksOnQuery = `
-    INSERT INTO WorksOn (Essn, Pno, Hours)
-    VALUES
-    ('111111111', 1, 40),
-    ('222222222', 2, 45),
-    ('333333333', 3, 50);
-  `;
-  connection.query(insertWorksOnQuery, function (err, result) {
-    if (err) throw err;
-    console.log('Inserted records into "WorksOn" table');
-  });
-
-  // Insert into 'Dependent' table
-  const insertDependentQuery = `
-    INSERT INTO Dependent (Essn, Dependent_name, Sex, Bdate, Relationship)
-    VALUES
-    ('111111111', 'Alice Doe', 'F', '2010-01-01', 'Child'),
-    ('222222222', 'Bob Doe', 'M', '2012-02-02', 'Child'),
-    ('333333333', 'Charlie Smith', 'M', '2005-03-03', 'Child');
-  `;
-  connection.query(insertDependentQuery, function (err, result) {
-    if (err) throw err;
-    console.log('Inserted records into "Dependent" table');
-  });
-
-  // Close the database connection
-  connection.end(function (err) {
-    if (err) {
-      console.error('Error closing connection:', err);
-    } else {
-      console.log('Connection closed');
-    }
-  });
-});
-
-
-inserthtml.js
-
-
-const http = require('http');
-const mysql = require('mysql2');
-const express = require('express');
-const app = express();
-const bodyParser = require('body-parser');
-const urlencodedParser = bodyParser.urlencoded({ extended: true });
-
-const con = mysql.createConnection({
-  host: '127.0.0.1',
-  user: 'root',
-  password: '',
-  database: 'finexpress',
-});
-
+// HTML content as a template literal
 const htmlForm = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Employee Data Insert Form</title>
+  <title>Document</title>
 </head>
 <body>
+   <form action="/thank" method="post">
+    title: <input type='text' name='one' value=''>
+    content: <input type='text' name='two' value=''>
+    rating: <input type='number' name='three' value='2'>
+    user_id: <input type='number' name='four' value='6'>
 
-  <h1>Insert Employee Data</h1>
+    <input type='submit' name='t1' value='Submit'>
+   </form>
 
-  <form action="/submit" method="post">
-    <label for="Fname">First Name:</label>
-    <input type="text" name="Fname" required><br>
-
-    <label for="Minit">Middle Initial:</label>
-    <input type="text" name="Minit"><br>
-
-    <label for="Lname">Last Name:</label>
-    <input type="text" name="Lname" required><br>
-
-    <label for="Ssn">Social Security Number:</label>
-    <input type="number" name="Ssn" required><br>
-
-    <label for="Bdate">Birth Date:</label>
-    <input type="date" name="Bdate" required><br>
-
-    <label for="Address">Address:</label>
-    <input type="text" name="Address" required><br>
-
-    <label for="Sex">Sex:</label>
-    <input type="text" name="Sex" required><br>
-
-    <label for="Salary">Salary:</label>
-    <input type="number" name="Salary" required><br>
-
-    <label for="Super_ssn">Supervisor SSN:</label>
-    <input type="number" name="Super_ssn"><br>
-
-    <label for="Dno">Department Number:</label>
-    <input type="number" name="Dno" required><br>
-
-    <button type="submit">Submit</button>
-  </form>
-
-  <script src="/newinsert.js"></script>
-
+   <script src="/new.js"></script>
 </body>
 </html>
 `;
 
 app.get('/send', function (req, res) {
-  res.send(htmlForm);
+    res.send(htmlForm);
 });
 
-app.post('/submit', urlencodedParser, function (req, res) {
-  const { Fname, Minit, Lname, Ssn, Bdate, Address, Sex, Salary, Super_ssn, Dno } = req.body;
+app.post('/thank', urlencodedParser, function (req, res) {
+    var title = req.body.one;
+    var content = req.body.two;
+    var Rating = req.body.three;
+    var user_id = req.body.four;
+    var sql1 = `INSERT INTO posts (title, content, Rating, user_id) values (?, ?, ?, ?)`;
 
-  const insertEmployeeQuery = `
-    INSERT INTO Employee (Fname, Minit, Lname, Ssn, Bdate, Address, Sex, Salary, Super_ssn, Dno)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-  `;
+    con.connect(function (err) {
+        if (err) throw err;
+        console.log("Connected");
+    });
 
-  con.query(
-    insertEmployeeQuery,
-    [Fname, Minit, Lname, Ssn, Bdate, Address, Sex, Salary, Super_ssn, Dno],
-    function (err, result) {
-      if (err) {
-        console.error('Error inserting into "Employee" table:', err);
-        res.send('Error');
-      } else {
-        console.log('Inserted records into "Employee" table');
-        res.send('Success');
-      }
-    }
+    con.query(sql1, [title, content, Rating, user_id], function (err, result) {
+        if (err) throw err;
+        res.write("rec inserted");
+        res.end();
+    });
+}).listen(9001);
+
+
+
+newinsert.html 
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+   <form action="/thank" method="post">
+    title:</title> : <input type='text' name='one' value=''>
+    content : <input type='text' name='two' value=''>
+    rating <input type='number' name='three' value='2'>
+    user_id <input type='number' name='four' value='6'>
+
+    <input type='submit' name='t1' value='Submit'>
+   </form>
+
+   <script src="/newinsert.js"></script>
+
+</body>
+</html>
+
+
+new.js
+
+
+
+var http = require('http');
+var mysql = require('mysql2');
+var express = require('express');
+var app = express();
+var bodyParser = require('body-parser');
+var urlencodedParser = bodyParser.urlencoded({ extended: true });
+
+const fs = require('fs');
+
+var con = mysql.createConnection({
+    host: "127.0.0.1",
+    user: "root",
+    password: "",
+    database: "e1"
+});
+
+// HTML content as a template literal
+const htmlForm = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+   <form action="/thank" method="post">
+    title: <input type='text' name='one' value=''>
+    content: <input type='text' name='two' value=''>
+    rating: <input type='number' name='three' value='2'>
+    user_id: <input type='number' name='four' value='6'>
+
+    <input type='submit' name='t1' value='Submit'>
+   </form>
+
+   <script src="/new.js"></script>
+</body>
+</html>
+`;
+
+app.get('/send', function (req, res) {
+    res.send(htmlForm);
+});
+
+app.post('/thank', urlencodedParser, function (req, res) {
+    var title = req.body.one;
+    var content = req.body.two;
+    var Rating = req.body.three;
+    var user_id = req.body.four;
+    var sql1 = `INSERT INTO posts (title, content, Rating, user_id) values (?, ?, ?, ?)`;
+
+    con.connect(function (err) {
+        if (err) throw err;
+        console.log("Connected");
+    });
+
+    con.query(sql1, [title, content, Rating, user_id], function (err, result) {
+        if (err) throw err;
+        res.write("rec inserted");
+        res.end();
+    });
+}).listen(9001);
+
+posrating.js
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+   <form action="/thank" method="post">
+    <h1> enter details of the comment</h1>
+    Comment_id:<input type='number' name='one' value=''>
+
+    <input type='submit' name='t1' value='Submit'>
+   </form>
+
+   <script src="/positive_rating.js"></script>
+
+</body>
+</html>
+
+
+posrating,js
+
+var http=require('http');
+var mysql=require('mysql');
+var express=require('express');
+var app=express();
+var bodyParser=require('body-parser');
+var urlencodedParser = bodyParser.urlencoded({extended: true});
+const fs=require('fs');
+
+var con = mysql.createConnection({
+    host:"127.0.0.1",
+    user:"root",
+    password:"",
+    database:"feedback"
+});
+
+app.get('/send',function (req,res){
+  fs.readFile('positive_rating.html','utf8',function(err,data)
+  { if(err)throw err;
+     res.send(data);
+  }
   );
 });
 
-const server = http.createServer(app);
-
-server.listen(9001, () => {
-  console.log('Server running at http://localhost:9001/');
-});
-
-
-
-queryre.js
-
-const mysql = require('mysql2');
-
-const connection = mysql.createConnection({
-  host: '127.0.0.1',
-  user: 'root',
-  password: '',
-  database: 'finexpress',
-});
-
-connection.connect(function (err) {
-  if (err) throw err;
-
-  const query = `
-    SELECT D.Dname AS DepartmentName, COUNT(E.Ssn) AS NumberOfFemaleEmployees
-    FROM Department1 D
-    JOIN Employee E ON D.Dnumber = E.Dno
-    WHERE E.Salary > 40000 AND E.Sex = 'F'
-    GROUP BY D.Dname;
-  `;
-
-  connection.query(query, function (err, results, fields) {
-    if (err) throw err;
-
-    console.log('Number of female employees in each department making more than Rs. 40,000:');
-    results.forEach((row) => {
-      console.log(`${row.DepartmentName}: ${row.NumberOfFemaleEmployees} female employees`);
+app.post('/thank',urlencodedParser, function(req,res){
+    var comment_id=req.body.one;
+    var sql1=`SELECT
+    comments.comment_text,
+    comments.rating,
+    (SELECT username FROM users WHERE users.user_id = comments.user_id LIMIT 1) AS username
+FROM
+    comments
+WHERE
+    comments.post_id = 1
+    AND comments.rating >= 4;`
+    
+    con.connect(function(err){
+        if(err)throw err;
+        console.log("Connected");
     });
-
-    // Close the database connection
-    connection.end(function (err) {
-      if (err) {
-        console.error('Error closing connection:', err);
-      } else {
-        console.log('Connection closed');
-      }
+    con.query(sql1,[comment_id],function(err,result){
+        if(err)throw err;
+        res.write("rec fetched");
+        res.json(result);
+        console.table(result);
     });
-  });
-});
-
-
-salary.js
-
-const mysql = require('mysql2');
-
-const connection = mysql.createConnection({
-  host: '127.0.0.1',
-  user: 'root',
-  password: '',
-  database: 'finexpress',
-});
-
-connection.connect(function (err) {
-  if (err) throw err;
-
-  const query = `
-    SELECT D.Dname AS DepartmentName, COUNT(E.Ssn) AS NumberOfEmployees
-    FROM Department1 D
-    JOIN Employee E ON D.Dnumber = E.Dno
-    GROUP BY D.Dname
-    HAVING AVG(E.Salary) > 40000;
-  `;
-
-  connection.query(query, function (err, results, fields) {
-    if (err) throw err;
-
-    console.log('Departments with average salary > Rs. 40,000:');
-    results.forEach((row) => {
-      console.log(`${row.DepartmentName}: ${row.NumberOfEmployees} employees`);
-    });
-
-    // Close the database connection
-    connection.end(function (err) {
-      if (err) {
-        console.error('Error closing connection:', err);
-      } else {
-        console.log('Connection closed');
-      }
-    });
-  });
-});
-
+    res.write("record fectched");
+    
+    
+    res.end();
+}).listen(9002);
